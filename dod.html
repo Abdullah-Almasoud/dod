@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لعبة الدودة 🐍</title>
+  <title>لعبة الدودة باللمس 🐍</title>
   <style>
     * {
       box-sizing: border-box;
@@ -32,14 +32,23 @@
       background: #111;
       border: 4px solid #00ff88;
       border-radius: 12px;
+      touch-action: none;
     }
 
-    #controls {
-      display: flex;
-      margin-top: 15px;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
+    #message {
+      position: absolute;
+      top: 40%;
+      background: #222;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 0 20px #00ff8855;
+      text-align: center;
+      display: none;
+      z-index: 2;
+    }
+
+    #message h2 {
+      margin: 0 0 15px;
     }
 
     .btn {
@@ -59,22 +68,6 @@
       background: #00cc66;
     }
 
-    #message {
-      position: absolute;
-      top: 40%;
-      background: #222;
-      padding: 20px;
-      border-radius: 14px;
-      box-shadow: 0 0 20px #00ff8855;
-      text-align: center;
-      display: none;
-      z-index: 2;
-    }
-
-    #message h2 {
-      margin: 0 0 15px;
-    }
-
     @media (max-width: 600px) {
       canvas {
         width: 90vw;
@@ -86,14 +79,6 @@
 <body>
   <h1>لعبة الدودة</h1>
   <canvas id="game" width="300" height="300"></canvas>
-  <div id="controls">
-    <button class="btn" onclick="changeDirection('up')">⬆️</button>
-    <div style="display: flex; gap: 10px;">
-      <button class="btn" onclick="changeDirection('left')">⬅️</button>
-      <button class="btn" onclick="changeDirection('right')">➡️</button>
-    </div>
-    <button class="btn" onclick="changeDirection('down')">⬇️</button>
-  </div>
 
   <div id="message">
     <h2 id="statusText"></h2>
@@ -116,20 +101,16 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // رسم الطعام
       ctx.fillStyle = "#ff3333";
       ctx.fillRect(food.x * box, food.y * box, box, box);
 
-      // رسم الدودة
       for (let i = 0; i < snake.length; i++) {
         ctx.fillStyle = i === 0 ? "#00ff88" : "#00cc66";
         ctx.fillRect(snake[i].x * box, snake[i].y * box, box - 1, box - 1);
       }
 
-      // تحريك الدودة
       const head = {x: snake[0].x + dx, y: snake[0].y + dy};
 
-      // خسارة؟
       if (
         head.x < 0 || head.y < 0 ||
         head.x >= cols || head.y >= rows ||
@@ -141,7 +122,6 @@
 
       snake.unshift(head);
 
-      // أكل؟
       if (head.x === food.x && head.y === food.y) {
         food = {
           x: Math.floor(Math.random() * cols),
@@ -153,13 +133,6 @@
       } else {
         snake.pop();
       }
-    }
-
-    function changeDirection(dir) {
-      if (dir === "up" && dy === 0) { dx = 0; dy = -1; }
-      else if (dir === "down" && dy === 0) { dx = 0; dy = 1; }
-      else if (dir === "left" && dx === 0) { dx = -1; dy = 0; }
-      else if (dir === "right" && dx === 0) { dx = 1; dy = 0; }
     }
 
     function endGame(message) {
@@ -178,12 +151,40 @@
       gameInterval = setInterval(draw, 120);
     }
 
-    // لوحة المفاتيح (للحواسيب)
+    // سحب بالإصبع
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener("touchstart", e => {
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    });
+
+    canvas.addEventListener("touchmove", e => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > 30 && dx === 0) { dx = 1; dy = 0; }
+        else if (deltaX < -30 && dx === 0) { dx = -1; dy = 0; }
+      } else {
+        if (deltaY > 30 && dy === 0) { dx = 0; dy = 1; }
+        else if (deltaY < -30 && dy === 0) { dx = 0; dy = -1; }
+      }
+
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: false });
+
+    // للكمبيوتر
     document.addEventListener("keydown", e => {
-      if (e.key === "ArrowUp") changeDirection("up");
-      if (e.key === "ArrowDown") changeDirection("down");
-      if (e.key === "ArrowLeft") changeDirection("left");
-      if (e.key === "ArrowRight") changeDirection("right");
+      if (e.key === "ArrowUp" && dy === 0) { dx = 0; dy = -1; }
+      if (e.key === "ArrowDown" && dy === 0) { dx = 0; dy = 1; }
+      if (e.key === "ArrowLeft" && dx === 0) { dx = -1; dy = 0; }
+      if (e.key === "ArrowRight" && dx === 0) { dx = 1; dy = 0; }
     });
 
     restartGame();
